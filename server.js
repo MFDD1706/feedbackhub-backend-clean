@@ -40,29 +40,56 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = new PrismaClient();
 
+// Test route to check database connection
+app.get('/api/test/db', async (req, res) => {
+  try {
+    const userCount = await prisma.user.count();
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, nome: true, cargo: true, status: true }
+    });
+    res.json({ 
+      message: 'Database connected', 
+      userCount,
+      users: users.slice(0, 5) // Show first 5 users
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ error: 'Database connection failed', details: error.message });
+  }
+});
+
 // Login route directly in server.js
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('Login attempt:', { email: req.body.email, hasPassword: !!req.body.senha });
+    
     const { email, senha } = req.body;
     
     if (!email || !senha) {
+      console.log('Missing credentials');
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
+    console.log('Looking for user:', email);
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
+      console.log('User not found:', email);
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
+    console.log('User found:', { id: user.id, email: user.email, status: user.status });
+
     const isValidPassword = await bcrypt.compare(senha, user.senha);
     if (!isValidPassword) {
+      console.log('Invalid password for user:', email);
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
     if (user.status !== 'ATIVO') {
+      console.log('User inactive:', email, user.status);
       return res.status(403).json({ error: 'Usuário inativo' });
     }
 
@@ -72,6 +99,7 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
+    console.log('Login successful for:', email);
     res.json({
       token,
       user: {
@@ -84,7 +112,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
   }
 });
 
