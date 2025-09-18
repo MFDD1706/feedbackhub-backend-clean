@@ -143,6 +143,7 @@ const loginUser = async (req, res, next) => {
         id: user.id,
         nome: user.nome,
         email: user.email,
+        perfil: user.cargo,
         cargo: user.cargo,
       },
     });

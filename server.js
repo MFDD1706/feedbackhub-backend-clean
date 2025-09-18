@@ -21,9 +21,11 @@ const emailRoutes = require('./routes/emailRoutes');
 const app = express();
 
 // Middlewares essenciais
-// Configuração de CORS para permitir todas as origens em desenvolvimento
 // Configuração de CORS para permitir o frontend
-app.use(cors());
+app.use(cors({
+  origin: ['https://feedbackhub-frontend-clean.onrender.com', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(helmet());
 app.use(compression());
 app.use(express.json());
